@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Lyrics Player</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .lyrics-container {
+            text-align: center;
+            margin: 50px auto;
+            max-width: 600px;
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        #lyrics-display {
+            height: 120px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 20px;
+            background: #222222;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .lyrics-line {
+            font-size: 28px;
+            height: 40px;
+            line-height: 40px;
+            margin: 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .lyrics-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .highlight {
+            color: #ff0000;
+            text-shadow: 0 0 5px #ff0000;
+        }
+
+        .coming-soon {
+            color: #666;
+        }
+
+        .passed {
+            color: #ccc;
+        }
+
+        .char {
+            display: inline-block;
+            transition: all 0.1s ease;
+            opacity: 0.3;
+            transform: scale(0.9);
+        }
+
+        .char-highlight {
+            color: #ff0000;
+            text-shadow: 0 0 8px #ff0000;
+            opacity: 1;
+            transform: scale(1.3);
+            font-weight: bold;
+            transition: all 0.08s ease-out;
+        }
+
+        .highlight .char {
+            opacity: 0.5;
+        }
+
+        .coming-soon .char,
+        .passed .char {
+            color: inherit;
+        }
+
+        .char-highlight:hover {
+            transform: scale(1.4);
+            transition: transform 0.05s ease-out;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 16px;
+            color: #ffd700;
+            opacity: 0.8;
+            font-family: Arial, sans-serif;
+            font-style: italic;
+            text-shadow: 0 0 5px #ffd700;
+            animation: glow 2s ease infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #ffd700;
+            }
+
+            to {
+                text-shadow: 0 0 10px #ffd700;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lyrics-container">
+        <h1>Anh đau từ lúc em đi</h1>
+        <div class="watermark">Tgrey.hoc.IT</div>
+        <audio id="audio" controls>
+            <source src="6231396778456855722.mp3" type="audio/mpeg">
+        </audio>
+        <div id="lyrics-display">
+            <div id="lyrics-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const lyrics = [
+            { time: 0, text: "Ngày đó anh ngỡ chỉ là lời nói", duration: 4 },
+            { time: 4, text: "Thốt ra khi mình hờn dỗi", duration: 4 },
+            { time: 8, text: "Giống như bao lần", duration: 3 },
+            { time: 11.5, text: "Giận nhau xong rồi lại thôi", duration: 4 },
+            { time: 16, text: "Ngờ đâu thì ra lại là lần cuối", duration: 4 },
+            { time: 21, text: "Của chuỗi những ngày lầm lỗi", duration: 4 },
+            { time: 25, text: "Em nói một lời", duration: 3 },
+            { time: 28.5, text: "Ta chia tay nhé anh ơi", duration: 4 },
+        ];
+
+        const audioElement = document.getElementById('audio');
+        const lyricsContainer = document.getElementById('lyrics-container');
+        let lastLineIndex = -1;
+
+        function createWordSpans(text) {
+            return text.split(' ').map(word => {
+                return word.split('').map(char =>
+                    `<span class="char">${char}</span>`
+                ).join('') + '<span class="char">&nbsp;</span>';
+            }).join('');
+        }
+
+        function updateLyrics(currentTime) {
+            const currentLineIndex = lyrics.findIndex(line =>
+                currentTime >= line.time && currentTime < line.time + line.duration
+            );
+
+            if (currentLineIndex === -1 || currentLineIndex === lastLineIndex) {
+                if (currentLineIndex !== -1) {
+                    const currentLine = lyricsContainer.querySelector('.highlight');
+                    if (currentLine) {
+                        const progress = (currentTime - lyrics[currentLineIndex].time) / lyrics[currentLineIndex].duration;
+                        const chars = currentLine.getElementsByClassName('char');
+                        const charCount = chars.length;
+                        const charsToLight = Math.floor(progress * charCount * 1.2);
+
+                        for (let j = 0; j < charCount; j++) {
+                            setTimeout(() => {
+                                if (j < charsToLight) {
+                                    chars[j].classList.add('char-highlight');
+                                } else {
+                                    chars[j].classList.remove('char-highlight');
+                                }
+                            }, j * 10);
+                        }
+                    }
+                }
+                return;
+            }
+
+            lastLineIndex = currentLineIndex;
+            lyricsContainer.innerHTML = '';
+
+            for (let i = currentLineIndex - 1; i <= currentLineIndex + 1; i++) {
+                if (i >= 0 && i < lyrics.length) {
+                    const div = document.createElement('div');
+                    div.className = 'lyrics-line';
+                    div.innerHTML = createWordSpans(lyrics[i].text);
+
+                    if (i === currentLineIndex) {
+                        div.className += ' highlight';
+                    } else if (i < currentLineIndex) {
+                        div.className += ' passed';
+                    } else {
+                        div.className += ' coming-soon';
+                    }
+
+                    lyricsContainer.appendChild(div);
+                    setTimeout(() => div.classList.add('visible'), 50);
+                }
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLyrics(0);
+        });
+
+        audioElement.addEventListener('play', () => {
+            updateLyrics(audioElement.currentTime);
+        });
+
+        let lastUpdate = 0;
+        audioElement.addEventListener('timeupdate', () => {
+            const now = Date.now();
+            if (now - lastUpdate > 30) {
+                updateLyrics(audioElement.currentTime);
+                lastUpdate = now;
+            }
+        });
+    </script>
+</body>
+
+</html>
